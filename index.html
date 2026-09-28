@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Що сьогодні на вечерю?</title>
+<link href="https://fonts.googleapis.com/css2?family=Marck+Script&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#12343b;--ink:#fdf6dc;--gold:#f2c94c;--paprika:#e4572e;--card:#1b4650;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito',system-ui,sans-serif;text-align:center;padding:24px 16px 48px}
+h1{font-family:'Marck Script',cursive;font-weight:400;font-size:clamp(2.4rem,9vw,4rem);margin:0 0 4px;color:var(--gold)}
+p.sub{margin:0 auto 28px;max-width:32ch;opacity:.85}
+section{max-width:420px;margin:0 auto 40px;background:var(--card);border-radius:28px;padding:24px 16px 28px}
+h2{font-family:'Marck Script',cursive;font-weight:400;font-size:2rem;margin:0 0 16px}
+.wrap{position:relative;width:min(340px,100%);margin:0 auto}
+canvas{width:100%;height:auto;aspect-ratio:1;display:block}
+.pin{position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:30px solid var(--paprika);filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));z-index:2}
+button{margin-top:20px;font:800 1.1rem 'Nunito',sans-serif;background:var(--gold);color:#12343b;border:0;border-radius:999px;padding:14px 36px;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.res{min-height:4rem;margin-top:16px;font-size:1.5rem;font-weight:800}
+.res small{display:block;margin-top:4px;font-size:1rem;font-weight:600;opacity:.85}
+</style>
+</head>
+<body>
+<h1>Що сьогодні на вечерю?</h1>
+<p class="sub">Крутіть колесо — і нехай доля вирішує.</p>
+
+<section>
+<h2>Гарнір</h2>
+<div class="wrap"><div class="pin"></div><canvas id="c1" width="680" height="680"></canvas></div>
+<button id="b1">Крутити</button>
+<div class="res" id="r1" aria-live="polite"></div>
+</section>
+
+<section>
+<h2>М'ясо</h2>
+<div class="wrap"><div class="pin"></div><canvas id="c2" width="680" height="680"></canvas></div>
+<button id="b2">Крутити</button>
+<div class="res" id="r2" aria-live="polite"></div>
+</section>
+
+<script>
+const COLORS=['#f2c94c','#f28c6b','#8fd3b6','#f6e7a8','#e9a0b8','#9ec5f0'];
+function wheel(cid,items,bid,rid){
+  const cv=document.getElementById(cid),ctx=cv.getContext('2d'),S=cv.width,R=S/2-8;
+  const n=items.length,seg=2*Math.PI/n;let rot=0;
+  function draw(){
+    ctx.clearRect(0,0,S,S);
+    for(let i=0;i<n;i++){
+      const a=rot+i*seg;
+      ctx.beginPath();ctx.moveTo(S/2,S/2);ctx.arc(S/2,S/2,R,a,a+seg);ctx.closePath();
+      ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+      ctx.lineWidth=4;ctx.strokeStyle='#12343b';ctx.stroke();
+      ctx.save();ctx.translate(S/2,S/2);ctx.rotate(a+seg/2);
+      ctx.fillStyle='#12343b';ctx.textAlign='right';ctx.textBaseline='middle';
+      let fs=32;const label=items[i][1]+' '+items[i][0],maxW=R-90;
+      ctx.font='800 '+fs+'px Nunito, sans-serif';
+      while(ctx.measureText(label).width>maxW&&fs>16){fs--;ctx.font='800 '+fs+'px Nunito, sans-serif'}
+      ctx.fillText(label,R-20,0);ctx.restore();
+    }
+    ctx.beginPath();ctx.arc(S/2,S/2,26,0,7);ctx.fillStyle='#12343b';ctx.fill();
+  }
+  draw();
+  const btn=document.getElementById(bid),res=document.getElementById(rid);
+  btn.onclick=()=>{
+    btn.disabled=true;res.textContent='';
+    const start=rot,total=(6+Math.random()*3)*2*Math.PI,dur=4500,t0=performance.now();
+    (function step(t){
+      const p=Math.min((t-t0)/dur,1),e=1-Math.pow(1-p,3);
+      rot=start+total*e;draw();
+      if(p<1){requestAnimationFrame(step);return}
+      const ang=(((-Math.PI/2-rot)%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+      const it=items[Math.floor(ang/seg)];
+      res.innerHTML=it[1]+' '+it[0]+'<small>'+it[2]+'</small>';
+      btn.disabled=false;btn.textContent='Ще раз';
+    })(t0);
+  };
+}
+function start(){
+  wheel('c1',[
+    ['Гречка','🌾','Розсипчаста, з маслом і цибулькою'],
+    ['Рис','🍚','Білий, гарячий, з шматочком масла'],
+    ['Пюре','🥔','Ніжне, на молоці'],
+    ['Макарони','🍝','З сиром або зі сметаною'],
+    ['Смажена картопля','🍟','Золотиста скоринка'],
+    ['Картопля в мундирі','🥔','Гаряча, зі сметаною і сіллю'],
+    ['Картопля з кропом','🌿','Молода, з маслом і свіжим кропом']
+  ],'b1','r1');
+  wheel('c2',[
+    ['Сосиски','🌭','Відварені або підсмажені'],
+    ['Котлети','🍖','Соковиті, домашні'],
+    ['Відбивні','🥩','Із золотистою скоринкою'],
+    ['Тефтелі','🧆','У томатному соусі'],
+    ['Курячі ніжки','🍗','Запечені до хрусткої шкірки'],
+    ['Печінка','🥘','Ніжна, з цибулею'],
+    ['Риба в сметані','🐟','Запечена у ніжному вершковому соусі']
+  ],'b2','r2');
+}
+(document.fonts&&document.fonts.load?document.fonts.load('800 34px Nunito').catch(()=>{}):Promise.resolve()).then(start);
+</script>
+</body>
+</html>
